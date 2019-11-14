@@ -10,6 +10,20 @@ module "gitlab-vpc" {
   create_private_subnets     = "true"
 }
 
+data "template_file" "bastion_init" {
+  template = "${file("${path.module}/templates/bastion-init.sh")}"
+}
+
+data "template_cloudinit_config" "bastion_config" {
+  gzip          = false
+  base64_encode = false
+
+  part {
+    content_type = "text/x-shellscript"
+    content      = "${data.template_file.bastion_init.rendered}"
+  }
+}
+
 module "gitlab-bastion" {
   source = "github.com/philips-software/terraform-aws-bastion?ref=1.0.0"
   enable_bastion = "true"

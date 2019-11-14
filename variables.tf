@@ -27,6 +27,11 @@ variable "key_name" {
 ################################################################################
 # RDS settings
 ################################################################################
+variable "db_user" {
+  type        = "string"
+  description = "The user of the database"
+  default     = "gitlab"
+}
 
 variable "db_password" {
   type        = "string"
@@ -41,7 +46,7 @@ variable "db_password_port" {
 
 variable "db_instance_class" {
   type        = "string"
-  default     = "db.t2.small"
+  default     = "db.t2.medium"
   description = "The instance class of the database"
 }
 
