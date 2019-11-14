@@ -1,5 +1,4 @@
 
-
 resource "aws_security_group" "gitlab_external_elb_sg" {
   name_prefix = "${format("%s-external-elb-", var.environment)}"
   vpc_id      = "${module.gitlab-vpc.vpc_id}"
