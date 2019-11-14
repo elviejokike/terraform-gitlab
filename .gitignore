@@ -1,9 +1,15 @@
-#  Local .terraform directories
-**/.terraform/*
+# state
+*.tfstate*
 
-# .tfstate files
-*.tfstate
-*.tfstate.*
+# Module directory
+.terraform/
 
-# .tfvars files
-*.tfvars
+# keys
+*id_rsa*
+
+# other
+.idea
+.DS_Store
+*.out
+example/*.secrets*.tfvars
+.envrc
