@@ -53,3 +53,28 @@ variable "db_instance_class" {
 variable "db_force_destroy" {
   default = "false"
 }
+
+################################################################################
+# EC2 settings
+################################################################################
+variable "ec2_ami" {
+  type        = "string"
+  default     = "ami-00562538339c5031c"
+  description = "GITLAB AMI"
+}
+
+variable "ec2_type" {
+  type        = "string"
+  default     =  "c4.xlarge"
+  description = "EC2 Instance Type"
+}
+
+
+################################################################################
+# General settings
+################################################################################
+variable "tags" {
+  type        = "map"
+  description = "A map of tags to add to the resources"
+  default     = {}
+}

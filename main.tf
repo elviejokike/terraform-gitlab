@@ -36,23 +36,92 @@ resource "aws_security_group" "gitlab_external_elb_sg" {
   }
 }
 
-resource "aws_elb" "gitlab_application" {
-  name               = "${var.environment}-gitlab-application"
+resource "aws_alb" "gitlab_alb" {
+  name               = "${var.environment}-gitlab-alb"
   subnets         = ["${module.gitlab-vpc.public_subnets}"]
   security_groups = ["${aws_security_group.gitlab_external_elb_sg.id}"]
 
-  listener {
-    instance_port     = 80
-    instance_protocol = "http"
-    lb_port           = 80
-    lb_protocol       = "http"
+  enable_deletion_protection = false
+
+  tags = "${merge(map("Name", format("%s", "${var.environment}-gitlab")),
+            map("Environment", format("%s", var.environment)),
+            map("Project", format("%s", var.project)),
+            var.tags)}"
+}
+
+resource "aws_alb_listener" "gitlab_alb_http_listener" {
+
+  load_balancer_arn = "${aws_alb.gitlab_alb.arn}"
+  protocol          = "HTTP"
+  port              = "80"
+
+  default_action {
+    target_group_arn = "${aws_alb_target_group.gitlab_alb_http_target_group.arn}"
+    type             = "forward"
+  }
+}
+
+resource "aws_alb_target_group" "gitlab_alb_http_target_group" {
+  protocol          = "HTTP"
+  port              = "80"
+  vpc_id   =        "${module.gitlab-vpc.vpc_id}"
+
+  lifecycle {
+    create_before_destroy = true
   }
 
-  health_check {
-    healthy_threshold   = 2
-    unhealthy_threshold = 5
-    timeout             = 3
-    target              = "HTTP:80/-/readiness"
-    interval            = 30
+  tags = "${merge(map("Name", format("%s", "${var.environment}-gitlab")),
+            map("Environment", format("%s", var.environment)),
+            map("Project", format("%s", var.project)),
+            var.tags)}"
+}
+
+
+data "template_file" "gitlab_instance_role_trust_policy" {
+  template = "${file("${path.module}/policies/instance-role-trust-policy.json")}"
+}
+
+resource "aws_iam_role" "gitlab_iam_instance_role" {
+  name               = "${var.environment}-gitlab-iam-instance-role"
+  assume_role_policy = "${data.template_file.gitlab_instance_role_trust_policy.rendered}"
+}
+
+resource "aws_iam_instance_profile" "gitlab_instance_profile" {
+  name = "${var.environment}-gitlab-instance-profile"
+  role = "${aws_iam_role.gitlab_iam_instance_role.name}"
+}
+
+resource "aws_launch_configuration" "gitlab_launch_configuration" {
+  name_prefix     = "${var.environment}-gitlab-launch-configuration"
+
+  image_id        = "${var.ec2_ami}"
+  instance_type   = "${var.ec2_type}"
+  key_name        = "${var.key_name}"
+
+  associate_public_ip_address = false
+  iam_instance_profile = "${aws_iam_instance_profile.gitlab_instance_profile.name}"
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  ebs_block_device {
+    device_name = "/dev/sdf"
+    volume_size = "100"
+    encrypted = true
+    delete_on_termination = false
+  }
+
+}
+
+resource "aws_autoscaling_group" "gitlab_autoscaling_group" {
+  
+  launch_configuration = "${aws_launch_configuration.gitlab_launch_configuration.name}"
+  min_size             = 1
+  max_size             = 2
+  vpc_zone_identifier  = ["${module.gitlab-vpc.private_subnets}"]
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
