@@ -146,7 +146,7 @@ resource "aws_launch_configuration" "gitlab_launch_configuration" {
   key_name        = "${var.key_name}"
   security_groups = ["${aws_security_group.gitlab_instance_sg.id}"]
 
-  associate_public_ip_address = true
+  associate_public_ip_address = false
   iam_instance_profile = "${aws_iam_instance_profile.gitlab_instance_profile.name}"
 
   lifecycle {
@@ -163,7 +163,7 @@ resource "aws_autoscaling_group" "gitlab_autoscaling_group" {
   launch_configuration = "${aws_launch_configuration.gitlab_launch_configuration.name}"
   min_size             = 1
   max_size             = 2
-  vpc_zone_identifier  = ["${module.gitlab-vpc.public_subnets}"]
+  vpc_zone_identifier  = ["${module.gitlab-vpc.private_subnets}"]
   health_check_type    = "EC2"
   force_delete         = true
 
