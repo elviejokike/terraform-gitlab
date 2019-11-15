@@ -145,7 +145,7 @@ data "template_file" "gitlab_application_user_data" {
     postgres_database     = "gitlab"
     postgres_username     = "${var.db_user}"
     postgres_password     = "${var.db_password}"
-    postgres_endpoint     = "${module.gitlab-db.fqdn}"
+    postgres_endpoint     = "${replace("${module.gitlab-db.endpoint}",":5432","")}"
   }
 }
 
