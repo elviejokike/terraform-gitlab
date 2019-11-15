@@ -59,7 +59,7 @@ variable "db_force_destroy" {
 ################################################################################
 variable "ec2_ami" {
   type        = "string"
-  default     = "ami-00562538339c5031c"
+  default     = "ami-044fd7c8c74c75eb6"
   description = "GITLAB AMI"
 }
 

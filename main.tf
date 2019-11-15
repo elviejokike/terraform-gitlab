@@ -1,6 +1,6 @@
 
 resource "aws_security_group" "gitlab_external_elb_sg" {
-  name_prefix = "${format("%s-external-elb-", var.environment)}"
+  name_prefix = "${format("%s-gitlab-external-elb-", var.environment)}"
   vpc_id      = "${module.gitlab-vpc.vpc_id}"
   description = "Allows external ELB traffic"
 
@@ -16,6 +16,53 @@ resource "aws_security_group" "gitlab_external_elb_sg" {
     to_port     = 443
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = -1
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  tags {
+    Name        = "${format("%s external elb", var.environment)}"
+    Environment = "${var.environment}"
+    Project     = "${var.project}"
+  }
+}
+
+resource "aws_security_group" "gitlab_instance_sg" {
+  name_prefix = "${format("%s-gitlab-instance-sg-", var.environment)}"
+  vpc_id      = "${module.gitlab-vpc.vpc_id}"
+  description = "Allows traffic between instances"
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    protocol  = "tcp"
+    from_port = 0
+    to_port   = 65535
+
+    cidr_blocks = [
+      "${module.gitlab-vpc.vpc_cidr}",
+    ]
   }
 
   egress {
@@ -97,21 +144,18 @@ resource "aws_launch_configuration" "gitlab_launch_configuration" {
   image_id        = "${var.ec2_ami}"
   instance_type   = "${var.ec2_type}"
   key_name        = "${var.key_name}"
+  security_groups = ["${aws_security_group.gitlab_instance_sg.id}"]
 
-  associate_public_ip_address = false
+  associate_public_ip_address = true
   iam_instance_profile = "${aws_iam_instance_profile.gitlab_instance_profile.name}"
 
   lifecycle {
     create_before_destroy = true
   }
 
-  ebs_block_device {
-    device_name = "/dev/sdf"
-    volume_size = "100"
-    encrypted = true
-    delete_on_termination = false
-  }
-
+  user_data       = <<END_INIT
+#!/bin/bash
+END_INIT
 }
 
 resource "aws_autoscaling_group" "gitlab_autoscaling_group" {
@@ -119,9 +163,16 @@ resource "aws_autoscaling_group" "gitlab_autoscaling_group" {
   launch_configuration = "${aws_launch_configuration.gitlab_launch_configuration.name}"
   min_size             = 1
   max_size             = 2
-  vpc_zone_identifier  = ["${module.gitlab-vpc.private_subnets}"]
+  vpc_zone_identifier  = ["${module.gitlab-vpc.public_subnets}"]
+  health_check_type    = "EC2"
+  force_delete         = true
 
   lifecycle {
     create_before_destroy = true
   }
+}
+
+resource "aws_autoscaling_attachment" "gitlab_asg_attachment_bar" {
+  autoscaling_group_name = "${aws_autoscaling_group.gitlab_autoscaling_group.id}"
+  alb_target_group_arn   = "${aws_alb_target_group.gitlab_alb_http_target_group.arn}"
 }
