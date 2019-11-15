@@ -138,6 +138,17 @@ resource "aws_iam_instance_profile" "gitlab_instance_profile" {
   role = "${aws_iam_role.gitlab_iam_instance_role.name}"
 }
 
+
+data "template_file" "gitlab_application_user_data" {
+  template = "${file("${path.module}/templates/application_user_data.tpl")}"
+  vars {
+    postgres_database     = "gitlab"
+    postgres_username     = "${var.db_user}"
+    postgres_password     = "${var.db_password}"
+    postgres_endpoint     = "${module.gitlab-db.fqdn}"
+  }
+}
+
 resource "aws_launch_configuration" "gitlab_launch_configuration" {
   name_prefix     = "${var.environment}-gitlab-launch-configuration"
 
@@ -153,9 +164,7 @@ resource "aws_launch_configuration" "gitlab_launch_configuration" {
     create_before_destroy = true
   }
 
-  user_data       = <<END_INIT
-#!/bin/bash
-END_INIT
+  user_data       = "${data.template_file.gitlab_application_user_data.rendered}"
 }
 
 resource "aws_autoscaling_group" "gitlab_autoscaling_group" {
