@@ -30,7 +30,6 @@ resource "aws_security_group" "gitlab_external_elb_sg" {
   }
 
   tags {
-    Name        = "${format("%s external elb", var.environment)}"
     Environment = "${var.environment}"
     Project     = "${var.project}"
   }
@@ -77,7 +76,6 @@ resource "aws_security_group" "gitlab_instance_sg" {
   }
 
   tags {
-    Name        = "${format("%s external elb", var.environment)}"
     Environment = "${var.environment}"
     Project     = "${var.project}"
   }
@@ -146,6 +144,7 @@ data "template_file" "gitlab_application_user_data" {
     postgres_username     = "${var.db_user}"
     postgres_password     = "${var.db_password}"
     postgres_endpoint     = "${replace("${module.gitlab-db.endpoint}",":5432","")}"
+    redis_endpoint        = "${aws_elasticache_replication_group.gitlab_redis.primary_endpoint_address}"
   }
 }
 

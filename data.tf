@@ -20,7 +20,48 @@ module "gitlab-db" {
   skip_final_snapshot     = "${var.db_force_destroy}"
 }
 
+
+// REDIS
+
 resource "aws_elasticache_subnet_group" "gitlab_redis_subnet_group" {
   name       = "${var.environment}-gitlab-redis"
   subnet_ids = ["${module.gitlab-vpc.private_subnets}"]
+}
+
+resource "aws_elasticache_replication_group" "gitlab_redis" {
+  replication_group_id          = "${var.environment}-gitlab-redis"
+  replication_group_description = "Redis cluster powering GitLab"
+  engine                        = "redis"
+  engine_version                = "3.2.10"
+  node_type                     = "cache.m4.large"
+  number_cache_clusters         = 3
+  port                          = 6379
+  availability_zones            = ["${module.gitlab-vpc.availability_zones}"]
+  automatic_failover_enabled    = true
+  security_group_ids            = ["${aws_security_group.gitlab_redis_sg.id}"]
+  subnet_group_name             = "${aws_elasticache_subnet_group.gitlab_redis_subnet_group.name}"
+}
+
+resource "aws_security_group" "gitlab_redis_sg" {
+  name_prefix = "${format("%s-gitlab-redis-sg", var.environment)}"
+  vpc_id      = "${module.gitlab-vpc.vpc_id}"
+  description = "Allows Redis traffic"
+
+  ingress {
+    from_port   = 6379
+    to_port     = 6379
+    protocol    = "tcp"
+    cidr_blocks = [
+      "${module.gitlab-vpc.vpc_cidr}",
+    ]
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  tags {
+    Environment = "${var.environment}"
+    Project     = "${var.project}"
+  }
 }
