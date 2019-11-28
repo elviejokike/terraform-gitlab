@@ -11,7 +11,7 @@ variable "project" {
   description = "Name of the project"
 }
 
-variable "extra_tags" {
+variable "tags" {
   default     = {}
   description = "Map with extra tags to be applied to all ebs volumes"
   type        = "map"
@@ -96,10 +96,9 @@ variable "ec2_type" {
 
 
 ################################################################################
-# General settings
+# NFS settings
 ################################################################################
-variable "tags" {
-  type        = "map"
-  description = "A map of tags to add to the resources"
-  default     = {}
+variable "nfs_server_ip" {
+  type        = "string"
+  description = "NFS Server IP"
 }

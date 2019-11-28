@@ -140,6 +140,7 @@ resource "aws_iam_instance_profile" "gitlab_instance_profile" {
 data "template_file" "gitlab_application_user_data" {
   template = "${file("${path.module}/application_user_data.tpl")}"
   vars {
+    nfs_server_ip         = "${var.nfs_server_ip}"
     postgres_database     = "gitlab"
     postgres_username     = "${var.db_user}"
     postgres_password     = "${var.db_password}"

@@ -1,7 +1,16 @@
 #cloud-config
 
 write_files:
+mounts:
+  - [ "${nfs_server_ip}:/gitlab-data", /gitlab-data, nfs4, "defaults,soft,rsize=1048576,wsize=1048576,noatime,lookupcache=positive", "0", "2" ]  
+  - [ /gitlab-data/git-data, /var/opt/gitlab/git-data, none, bind, "0", "0" ]
+  - [ /gitlab-data/.ssh, /var/opt/gitlab/.ssh, none, bind, "0", "0" ]
+  - [ /gitlab-data/uploads, /var/opt/gitlab/gitlab-rails/uploads, none, bind, "0", "0" ]
+  - [ /gitlab-data/shared, /var/opt/gitlab/gitlab-rails/shared, none, bind, "0", "0" ]
+  - [ /gitlab-data/builds, /var/opt/gitlab/gitlab-ci/builds, none, bind, "0", "0" ]
+
   - content: |
+      high_availability['mountpoint'] = ['/var/opt/gitlab/git-data', '/var/opt/gitlab/.ssh', '/var/opt/gitlab/gitlab-rails/uploads', '/var/opt/gitlab/gitlab-rails/shared', '/var/opt/gitlab/gitlab-ci/builds']
       # Disabe built-in postgres and redis
       postgresql['enable'] = false
       redis['enable'] = false
