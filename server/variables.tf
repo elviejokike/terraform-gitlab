@@ -68,21 +68,16 @@ variable "db_password" {
   description = "The password of the database"
 }
 
-variable "db_password_port" {
+variable "db_endpint" {
   type        = "string"
-  default     = "5432"
-  description = "The port of the database"
+  description = "Database endpoint"
 }
 
-variable "db_instance_class" {
+variable "redis_endpoint" {
   type        = "string"
-  default     = "db.t2.medium"
-  description = "The instance class of the database"
+  description = "Redis endpoint"
 }
 
-variable "db_force_destroy" {
-  default = "false"
-}
 
 ################################################################################
 # EC2 settings

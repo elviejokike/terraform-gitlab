@@ -143,8 +143,8 @@ data "template_file" "gitlab_application_user_data" {
     postgres_database     = "gitlab"
     postgres_username     = "${var.db_user}"
     postgres_password     = "${var.db_password}"
-    postgres_endpoint     = "${replace("${module.gitlab-db.endpoint}",":5432","")}"
-    redis_endpoint        = "${aws_elasticache_replication_group.gitlab_redis.primary_endpoint_address}"
+    postgres_endpoint     = "${var.db_endpint}"
+    redis_endpoint        = "${var.redis_endpoint}"
     cidr                  = "${var.vpc_cidr}"
   }
 }
