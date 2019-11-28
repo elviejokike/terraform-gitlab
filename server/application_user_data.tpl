@@ -16,6 +16,7 @@ write_files:
       gitlab_rails['auto_migrate'] = true
       gitlab_rails['redis_host'] = "${redis_endpoint}"
       gitlab_rails['redis_port'] = 6379
+      gitlab_rails['monitoring_whitelist'] = ['${cidr}']
     path: /etc/gitlab/gitlab.rb
     permissions: '0600'
 

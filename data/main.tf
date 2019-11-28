@@ -2,15 +2,15 @@ module "gitlab-db" {
   source                  = "github.com/philips-software/terraform-aws-rds?ref=1.1.0"
   name                    = "gitlab"
   environment             = "${var.environment}"
-  vpc_id                  = "${module.gitlab-vpc.vpc_id}"
-  subnet_ids              = "${join(",", "${module.gitlab-vpc.private_subnets}")}"
+  vpc_id                  = "${var.vpc_id}"
+  subnet_ids              = "${join(",", "${var.private_subnet_ids}")}"
   engine                  = "postgres"
   engine_version          = "10.6"
   port                    = "${var.db_password_port}"
   username                = "${var.db_user}"
   password                = "${var.db_password}"
   instance_class          = "${var.db_instance_class}"
-  vpc_private_dns_zone_id = "${module.gitlab-vpc.private_dns_zone_id}"
+  vpc_private_dns_zone_id = "${var.private_hosted_zone_id}"
 
   // override defaults
   storage_encrypted       = "true"
@@ -25,7 +25,7 @@ module "gitlab-db" {
 
 resource "aws_elasticache_subnet_group" "gitlab_redis_subnet_group" {
   name       = "${var.environment}-gitlab-redis"
-  subnet_ids = ["${module.gitlab-vpc.private_subnets}"]
+  subnet_ids = ["${var.private_subnet_ids}"]
 }
 
 resource "aws_elasticache_replication_group" "gitlab_redis" {
@@ -36,7 +36,7 @@ resource "aws_elasticache_replication_group" "gitlab_redis" {
   node_type                     = "cache.m4.large"
   number_cache_clusters         = 3
   port                          = 6379
-  availability_zones            = ["${module.gitlab-vpc.availability_zones}"]
+  availability_zones            = ["${var.availability_zones}"]
   automatic_failover_enabled    = true
   security_group_ids            = ["${aws_security_group.gitlab_redis_sg.id}"]
   subnet_group_name             = "${aws_elasticache_subnet_group.gitlab_redis_subnet_group.name}"
@@ -44,7 +44,7 @@ resource "aws_elasticache_replication_group" "gitlab_redis" {
 
 resource "aws_security_group" "gitlab_redis_sg" {
   name_prefix = "${format("%s-gitlab-redis-sg", var.environment)}"
-  vpc_id      = "${module.gitlab-vpc.vpc_id}"
+  vpc_id      = "${var.vpc_id}"
   description = "Allows Redis traffic"
 
   ingress {
@@ -52,7 +52,7 @@ resource "aws_security_group" "gitlab_redis_sg" {
     to_port     = 6379
     protocol    = "tcp"
     cidr_blocks = [
-      "${module.gitlab-vpc.vpc_cidr}",
+      "${var.vpc_cidr}",
     ]
   }
 

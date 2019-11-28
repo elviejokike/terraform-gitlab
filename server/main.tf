@@ -1,7 +1,7 @@
 
 resource "aws_security_group" "gitlab_external_elb_sg" {
   name_prefix = "${format("%s-gitlab-external-elb-", var.environment)}"
-  vpc_id      = "${module.gitlab-vpc.vpc_id}"
+  vpc_id      = "${var.vpc_id}"
   description = "Allows external ELB traffic"
 
   ingress {
@@ -37,7 +37,7 @@ resource "aws_security_group" "gitlab_external_elb_sg" {
 
 resource "aws_security_group" "gitlab_instance_sg" {
   name_prefix = "${format("%s-gitlab-instance-sg-", var.environment)}"
-  vpc_id      = "${module.gitlab-vpc.vpc_id}"
+  vpc_id      = "${var.vpc_id}"
   description = "Allows traffic between instances"
 
   ingress {
@@ -60,7 +60,7 @@ resource "aws_security_group" "gitlab_instance_sg" {
     to_port   = 65535
 
     cidr_blocks = [
-      "${module.gitlab-vpc.vpc_cidr}",
+      "${var.vpc_cidr}",
     ]
   }
 
@@ -83,7 +83,7 @@ resource "aws_security_group" "gitlab_instance_sg" {
 
 resource "aws_alb" "gitlab_alb" {
   name               = "${var.environment}-gitlab-alb"
-  subnets         = ["${module.gitlab-vpc.public_subnets}"]
+  subnets         = ["${var.public_subnet_ids}"]
   security_groups = ["${aws_security_group.gitlab_external_elb_sg.id}"]
 
   enable_deletion_protection = false
@@ -109,7 +109,7 @@ resource "aws_alb_listener" "gitlab_alb_http_listener" {
 resource "aws_alb_target_group" "gitlab_alb_http_target_group" {
   protocol          = "HTTP"
   port              = "80"
-  vpc_id   =        "${module.gitlab-vpc.vpc_id}"
+  vpc_id   =        "${var.vpc_id}"
 
   lifecycle {
     create_before_destroy = true
@@ -123,7 +123,7 @@ resource "aws_alb_target_group" "gitlab_alb_http_target_group" {
 
 
 data "template_file" "gitlab_instance_role_trust_policy" {
-  template = "${file("${path.module}/policies/instance-role-trust-policy.json")}"
+  template = "${file("${path.module}/instance-role-trust-policy.json")}"
 }
 
 resource "aws_iam_role" "gitlab_iam_instance_role" {
@@ -138,13 +138,14 @@ resource "aws_iam_instance_profile" "gitlab_instance_profile" {
 
 
 data "template_file" "gitlab_application_user_data" {
-  template = "${file("${path.module}/templates/application_user_data.tpl")}"
+  template = "${file("${path.module}/application_user_data.tpl")}"
   vars {
     postgres_database     = "gitlab"
     postgres_username     = "${var.db_user}"
     postgres_password     = "${var.db_password}"
     postgres_endpoint     = "${replace("${module.gitlab-db.endpoint}",":5432","")}"
     redis_endpoint        = "${aws_elasticache_replication_group.gitlab_redis.primary_endpoint_address}"
+    cidr                  = "${var.vpc_cidr}"
   }
 }
 
@@ -171,7 +172,7 @@ resource "aws_autoscaling_group" "gitlab_autoscaling_group" {
   launch_configuration = "${aws_launch_configuration.gitlab_launch_configuration.name}"
   min_size             = 1
   max_size             = 2
-  vpc_zone_identifier  = ["${module.gitlab-vpc.private_subnets}"]
+  vpc_zone_identifier  = ["${var.private_subnet_ids}"]
   health_check_type    = "EC2"
   force_delete         = true
 

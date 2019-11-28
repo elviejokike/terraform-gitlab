@@ -11,6 +11,12 @@ variable "project" {
   description = "Name of the project"
 }
 
+variable "tags" {
+  default     = {}
+  description = "Map with extra tags to be applied to all ebs volumes"
+  type        = "map"
+}
+
 ################################################################################
 # AWS Settings
 ################################################################################
@@ -19,10 +25,41 @@ variable "aws_region" {
   description = "The Amazon region"
 }
 
-variable "key_name" {
+################################################################################
+# Network Settings
+################################################################################
+
+variable "vpc_id" {
   type        = "string"
-  description = "Name of the key pair used for accessing EC2 instances"
+  description = "VPC ID"
 }
+
+variable "vpc_cidr" {
+  type        = "string"
+  description = "CIDR"
+}
+
+variable "public_subnet_ids" {
+  type        = "list"
+  description = "The list of public subnet ids"
+}
+
+variable "private_subnet_ids" {
+  type        = "list"
+  description = "The list of private subnet ids"
+}
+
+variable "private_hosted_zone_id" {
+  type        = "string"
+  description = "The private hosted zone id"
+}
+
+variable "availability_zones" {
+  type        = "list"
+  description = "Availability zones"
+}
+
+
 
 ################################################################################
 # RDS settings
@@ -54,27 +91,3 @@ variable "db_force_destroy" {
   default = "false"
 }
 
-################################################################################
-# EC2 settings
-################################################################################
-variable "ec2_ami" {
-  type        = "string"
-  default     = "ami-97605e7c"
-  description = "GITLAB AMI"
-}
-
-variable "ec2_type" {
-  type        = "string"
-  default     =  "c4.xlarge"
-  description = "EC2 Instance Type"
-}
-
-
-################################################################################
-# General settings
-################################################################################
-variable "tags" {
-  type        = "map"
-  description = "A map of tags to add to the resources"
-  default     = {}
-}

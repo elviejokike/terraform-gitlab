@@ -11,7 +11,7 @@ module "gitlab-vpc" {
 }
 
 data "template_file" "bastion_init" {
-  template = "${file("${path.module}/templates/bastion-init.sh")}"
+  template = "${file("${path.module}/bastion-init.sh")}"
 }
 
 data "template_cloudinit_config" "bastion_config" {
